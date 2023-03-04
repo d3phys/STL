@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.9.1)
+project( CMakeHello)
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+include(txflags.cmake)
+add_executable(hello main.cc)
