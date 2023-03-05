@@ -3,6 +3,7 @@
 #include <memory>
 #include <iterator>
 #include <exception>
+#include <vector>
 
 namespace stl {
 
@@ -10,10 +11,57 @@ using T_t = float;
 
 class Vector
 {
+
 public:
     using size_type = std::size_t;
     using T = T_t;
     using value_type = T;
+
+public:
+    class Iterator
+    {
+    public:
+        explicit Iterator( T* element)
+            : element_{ element}
+        {}
+
+
+        /* LegacyBidirectionalIterator part */
+        Iterator& operator++() { return (*this += 1); }
+        Iterator operator++(int) { return (*this += 1); }
+        Iterator& operator--() { return (*this -= 1); }
+        Iterator operator--(int) { return (*this -= 1); }
+
+        /* LegacyRandomAccessIterator part */
+        Iterator& operator+=( ptrdiff_t n)
+        {
+            element_ += n;
+            return *this;
+        }
+
+        Iterator& operator-=( ptrdiff_t n)
+        {
+            return (*this) += (-n);
+        }
+
+        ptrdiff_t operator-( const Iterator& rhs) const
+        {
+            return (this->element_ - rhs.element_);
+        }
+
+        T& operator[]( ptrdiff_t n)
+        {
+            return element_[n];
+        }
+
+        bool operator<( const Iterator& rhs) const { return (*this - rhs) > 0; }
+        bool operator>( const Iterator& rhs) const { return (rhs < *this); }
+        bool operator>=( const Iterator& rhs) const { return !(*this < rhs); }
+        bool operator<=( const Iterator& rhs) const { return !(*this > rhs); }
+
+    private:
+        T* element_;
+    };
 
 public:
     Vector()
@@ -37,6 +85,8 @@ public:
      *
      * When you pass rvalue the other will be created by move constructor,
      * while if argument is lvalue it will be copied into other.
+     *
+     * Note! Copy constructor is deleted :)
      */
     Vector& operator=( Vector other)
     {
@@ -45,9 +95,7 @@ public:
     }
 
     explicit Vector( size_t count)
-        : data_{}
-        , size_{}
-        , capacity_{}
+        : Vector{}
     {
         reserve( count);
         uninitializedDefaultConstruct( data_, data_ + count);
@@ -78,6 +126,26 @@ public:
         }
 
         return data_[index];
+    }
+
+    T& front()
+    {
+        return const_cast<T&>( const_cast<Vector*>( this)->front());
+    }
+
+    const T& front() const
+    {
+        return (*this)[0];
+    }
+
+    T& back()
+    {
+        return const_cast<T&>( const_cast<Vector*>( this)->back());
+    }
+
+    const T& back() const
+    {
+        return (*this)[size_ - 1];
     }
 
     bool empty()
@@ -112,12 +180,12 @@ public:
                 uninitializedCopy( data_, data_ + size_, new_data);
             } catch ( ... )
             {
-                delete[] reinterpret_cast<char*>( new_data);
+                ::delete[] reinterpret_cast<char*>( new_data);
                 throw;
             }
         }
 
-        delete[] reinterpret_cast<char*>( data_);
+        ::delete[] reinterpret_cast<char*>( data_);
         capacity_ = new_capacity;
         data_ = new_data;
     }
@@ -160,7 +228,7 @@ public:
 
     ~Vector()
     {
-        delete[] reinterpret_cast<char*>( data_);
+        ::delete[] reinterpret_cast<char*>( data_);
         data_ = nullptr;
         capacity_ = 0;
         size_ = 0;
@@ -201,7 +269,7 @@ private:
         {
             /**
              * To provide string exception safety need to cleanup all constructed objects.
-             * Also it bans perfect forwarding.
+             * Also exception safety bans perfect forwarding.
              */
             for ( ; dest_start != dest_end; ++dest_start )
             {
@@ -248,6 +316,20 @@ private:
     size_t capacity_;
 };
 
+Vector::Iterator
+operator+( Vector::Iterator it,
+           ptrdiff_t n)
+{
+    return it += n;
+}
+
+Vector::Iterator
+operator+( ptrdiff_t n,
+           Vector::Iterator it)
+{
+    return it += n;
+}
+
 }
 
 int
@@ -257,6 +339,9 @@ main( int argc,
     stl::Vector arr {10U};
     arr[0] = 123;
 
+    arr.begin();
+
+    std::vector<int>::iterator arrx;
     arr.clear();
     std::printf( "Hello world\n");
     std::printf("elem[0] = %f \n", arr[0]);
