@@ -4,6 +4,7 @@
 #include <iterator>
 #include <exception>
 #include <vector>
+#include <algorithm>
 
 namespace stl {
 
@@ -25,6 +26,11 @@ public:
             : element_{ element}
         {}
 
+        /* LegacyInputIterator part */
+        T& operator*() { return (*element_); }
+
+        bool operator==( const Iterator& rhs) const { return !!(element_ == rhs.element_); }
+        bool operator!=( const Iterator& rhs) const { return !(*this == rhs); }
 
         /* LegacyBidirectionalIterator part */
         Iterator& operator++() { return (*this += 1); }
@@ -146,6 +152,16 @@ public:
     const T& back() const
     {
         return (*this)[size_ - 1];
+    }
+
+    Iterator begin()
+    {
+        return Iterator{ data_};
+    }
+
+    Iterator end()
+    {
+        return Iterator{ data_ + size_};
     }
 
     bool empty()
@@ -332,18 +348,38 @@ operator+( ptrdiff_t n,
 
 }
 
+namespace std {
+
+template <>
+struct iterator_traits<stl::Vector::Iterator>
+{
+    using iterator_category = random_access_iterator_tag;
+    using value_type        = stl::Vector::T;
+    using difference_type   = ptrdiff_t;
+    using pointer           = stl::Vector::T*;
+    using reference         = stl::Vector::T&;
+};
+
+};
+
 int
 main( int argc,
       const char* argv[])
 {
-    stl::Vector arr {10U};
+
+    stl::Vector arr{ 10U};
     arr[0] = 123;
+    arr[1] = 1;
+    arr[2] = 13;
 
-    arr.begin();
+    //std::sort( arr);
+    float x = *std::find_if(arr.begin(), arr.end(), [](float i){ return i == 1; });
+    std::printf( "elem = %f \n", x);
 
-    std::vector<int>::iterator arrx;
-    arr.clear();
-    std::printf( "Hello world\n");
-    std::printf("elem[0] = %f \n", arr[0]);
+    for ( auto&& elem : arr )
+    {
+        //std::printf( "elem = %f \n", elem);
+    }
+
     return 0;
 }
